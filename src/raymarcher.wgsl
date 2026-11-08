@@ -1,4 +1,3 @@
-
 struct VertexInput {
     @location(0) quad_position: vec3<f32>,
 };
@@ -16,11 +15,6 @@ struct Uniform {
 @group(0) @binding(0)
 var<uniform> buffer: Uniform;
 
-
-// ============================================================================
-// COLOURS
-// ============================================================================
-
 const BASE_COLOR: vec3<f32> = vec3<f32>(
     0.0,
     0.0,
@@ -28,50 +22,26 @@ const BASE_COLOR: vec3<f32> = vec3<f32>(
 );
 
 const OCCLUSION_COLOR: vec3<f32> = vec3<f32>(
-    0.4,
-    0.0,
-    0.9
+    1.,
+    1.,
+    1.
 );
 
-
-// ============================================================================
-// MANDELBULB
-// ============================================================================
 
 const POWER_MIN: f32 = 6.;
 const POWER_MAX: f32 = 10.0;
 
-// Time in seconds for a complete power cycle.
 const POWER_CYCLE: f32 = 15.0;
 
 const MANDELBULB_ITERATIONS: i32 = 20;
 const MANDELBULB_ESCAPE_RADIUS: f32 = 1.5;
 
-
-// ============================================================================
-// RAY MARCHING
-// ============================================================================
-
 const EPSILON: f32 = 0.0002;
 const MAX_DISTANCE: f32 = 10.0;
 const MAX_STEPS: i32 = 160;
 
-
-// ============================================================================
-// AMBIENT OCCLUSION
-//
-// This follows the AO calculation from your reference shader.
-//
-// More ray-marching steps = darker/more occluded.
-// ============================================================================
-
 const AO_STEP_SCALE: f32 = 0.015;
 const AO_POWER: f32 = 2.0;
-
-
-// ============================================================================
-// VERTEX SHADER
-// ============================================================================
 
 @vertex
 fn vs_main(
@@ -87,11 +57,6 @@ fn vs_main(
     return out;
 }
 
-
-// ============================================================================
-// ANIMATED MANDELBULB POWER
-// ============================================================================
-
 fn animated_power(
     time: f32
 ) -> f32 {
@@ -100,7 +65,6 @@ fn animated_power(
         2.0 *
         3.14159265359;
 
-    // Smoothly oscillates between 0 and 1.
     let t =
         0.5 +
         0.5 * sin(phase);
@@ -111,11 +75,6 @@ fn animated_power(
         t
     );
 }
-
-
-// ============================================================================
-// MANDELBULB DISTANCE ESTIMATOR
-// ============================================================================
 
 fn mandelbulb_sdf(
     pos: vec3<f32>,
@@ -142,10 +101,6 @@ fn mandelbulb_sdf(
             break;
         }
 
-        // --------------------------------------------------------------------
-        // Convert to polar coordinates.
-        // --------------------------------------------------------------------
-
         let theta =
             acos(
                 clamp(
@@ -161,10 +116,6 @@ fn mandelbulb_sdf(
                 z.x
             );
 
-        // --------------------------------------------------------------------
-        // Derivative estimate.
-        // --------------------------------------------------------------------
-
         dr =
             pow(
                 r,
@@ -173,10 +124,6 @@ fn mandelbulb_sdf(
             * power
             * dr
             + 1.0;
-
-        // --------------------------------------------------------------------
-        // Scale and rotate.
-        // --------------------------------------------------------------------
 
         let zr =
             pow(
@@ -189,10 +136,6 @@ fn mandelbulb_sdf(
 
         let new_phi =
             phi * power;
-
-        // --------------------------------------------------------------------
-        // Convert back to Cartesian coordinates.
-        // --------------------------------------------------------------------
 
         z =
             pos +
@@ -211,11 +154,6 @@ fn mandelbulb_sdf(
         dr;
 }
 
-
-// ============================================================================
-// SCENE SDF
-// ============================================================================
-
 fn scene_sdf(
     position: vec3<f32>,
     time: f32
@@ -225,19 +163,6 @@ fn scene_sdf(
         time
     );
 }
-
-
-// ============================================================================
-// RAY MARCHING
-//
-// depth:
-//     Total distance travelled by the ray.
-//
-// steps:
-//     Number of SDF evaluations.
-//
-// The step count is later used as the AO value.
-// ============================================================================
 
 fn ray_marching(
     eye: vec3<f32>,
@@ -283,20 +208,6 @@ fn ray_marching(
     return intersection_point;
 }
 
-
-// ============================================================================
-// AMBIENT OCCLUSION
-//
-// This is intentionally based on the reference shader:
-//
-//     float ao = steps * 0.015;
-//     ao = 1. - ao / (ao + 1.0);
-//     ao = pow(ao, 2.);
-//
-// It produces darker colour where the ray requires more SDF steps to reach
-// the surface.
-// ============================================================================
-
 fn ambient_occlusion(
     steps: f32
 ) -> f32 {
@@ -305,12 +216,10 @@ fn ambient_occlusion(
         steps *
         AO_STEP_SCALE;
 
-    // Reinhard remapping.
     ao =
         1.0 -
         ao / (ao + 1.0);
 
-    // Increase contrast.
     ao =
         pow(
             ao,
@@ -324,20 +233,10 @@ fn ambient_occlusion(
     );
 }
 
-
-// ============================================================================
-// FRAGMENT SHADER
-// ============================================================================
-
 @fragment
 fn fs_main(
     in: VertexOutput
 ) -> @location(0) vec4<f32> {
-
-    // ------------------------------------------------------------------------
-    // Uniforms
-    // ------------------------------------------------------------------------
-
     let resolution =
         buffer.resolution_time_fov.xy;
 
@@ -347,25 +246,14 @@ fn fs_main(
     let fov =
         buffer.resolution_time_fov.w;
 
-
-    // ------------------------------------------------------------------------
-    // Screen coordinates
-    // ------------------------------------------------------------------------
-
     var coord =
         (in.clip_position.xy / resolution) *
         2.0 -
         1.0;
 
-    // Match the coordinate transform from the reference shader.
     coord.y *=
         resolution.y /
         resolution.x;
-
-
-    // ------------------------------------------------------------------------
-    // Camera basis
-    // ------------------------------------------------------------------------
 
     let camera_position =
         buffer.camera_position.xyz;
@@ -402,11 +290,6 @@ fn fs_main(
             )
         );
 
-
-    // ------------------------------------------------------------------------
-    // Ray direction
-    // ------------------------------------------------------------------------
-
     let ray_direction =
         normalize(
             forward
@@ -419,11 +302,6 @@ fn fs_main(
             coord.y *
             tan(fov * 0.5)
         );
-
-
-    // ------------------------------------------------------------------------
-    // Ray march
-    // ------------------------------------------------------------------------
 
     var depth: f32 = 0.0;
     var steps: f32 = 0.0;
@@ -438,27 +316,10 @@ fn fs_main(
             &steps
         );
 
-
-
-    // ------------------------------------------------------------------------
-    // Ambient occlusion
-    // ------------------------------------------------------------------------
-
     let ao =
         ambient_occlusion(
             steps
         );
-
-
-    // ------------------------------------------------------------------------
-    // Colour
-    //
-    // AO = 0:
-    //     OCCLUSION_COLOR
-    //
-    // AO = 1:
-    //     BASE_COLOR
-    // ------------------------------------------------------------------------
 
     let color =
         mix(
@@ -466,11 +327,6 @@ fn fs_main(
             BASE_COLOR,
             ao
         );
-
-
-    // ------------------------------------------------------------------------
-    // Output
-    // ------------------------------------------------------------------------
 
     return vec4<f32>(
         color,

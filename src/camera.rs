@@ -57,9 +57,6 @@ impl Camera {
 
     pub fn input(&mut self, event: &WindowEvent) -> bool {
         match event {
-            // -----------------------------------------------------
-            // LEFT MOUSE BUTTON
-            // -----------------------------------------------------
             WindowEvent::MouseInput {
                 state,
                 button: MouseButton::Left,
@@ -79,9 +76,6 @@ impl Camera {
                 true
             }
 
-            // -----------------------------------------------------
-            // MOUSE MOVEMENT
-            // -----------------------------------------------------
             WindowEvent::CursorMoved { position, .. } => {
                 if self.mouse_pressed {
                     if let Some((last_x, last_y)) = self.last_mouse {
@@ -119,9 +113,6 @@ impl Camera {
                 true
             }
 
-            // -----------------------------------------------------
-            // MOUSE WHEEL
-            // -----------------------------------------------------
             WindowEvent::MouseWheel { delta, .. } => {
                 let scroll = match delta {
                     MouseScrollDelta::LineDelta(_, y) => {
@@ -180,18 +171,6 @@ impl Camera {
             self.target[2]
                 + direction[2] * self.distance,
         ];
-    }
-
-    pub fn position(&self) -> [f32; 3] {
-        self.pos
-    }
-
-    pub fn target(&self) -> [f32; 3] {
-        self.target
-    }
-
-    pub fn resolution(&self) -> [f32; 2] {
-        self.res
     }
 }
 

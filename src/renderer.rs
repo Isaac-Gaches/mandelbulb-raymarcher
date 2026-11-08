@@ -57,7 +57,7 @@ impl Render{
 
         let shader = egpu.load_shader(include_str!("raymarcher.wgsl"));
 
-        let pipeline = RenderPipelineBuilder::new(shader.clone())
+        let pipeline = RenderPipelineBuilder::new(shader)
             .vertex_layout(Vertex::buffer_layout())
             .material_layout(&[render_uniform(0)])
             .depth_format(TextureFormat::Depth24Plus)
